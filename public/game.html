@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TuBlox 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { overflow: hidden; margin: 0; background: #000; user-select: none; }
+    </style>
+</head>
+<body>
+    <!-- Прицел -->
+    <div id="crosshair"></div>
+
+    <!-- UI Слой -->
+    <div id="hud-layer">
+        
+<div id="top-left-ui">
+            <!-- Заменили ссылку на кнопку -->
+            <button id="btn-open-menu" class="ui-btn">Menu</button> 
+            
+            <div id="chat-box">
+                <div id="messages"></div>
+                <input type="text" id="chat-input" placeholder="Enter to chat...">
+            </div>
+        </div>
+
+        <!-- Полоска здоровья (Roblox style) -->
+        <div id="health-container">
+            <div id="health-label">Health</div>
+            <div id="health-bar-bg">
+                <div id="health-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- Инвентарь (Hotbar) -->
+        <div id="inventory-bar">
+            <!-- Слоты генерируются JS -->
+            <div class="slot active" data-key="1"><span class="key-num">1</span><span class="item-name">Sword</span></div>
+            <div class="slot" data-key="2"><span class="key-num">2</span></div>
+            <div class="slot" data-key="3"><span class="key-num">3</span></div>
+        </div>
+    </div>
+
+    <!-- ESC MENU (Скрыто по умолчанию) -->
+    <div id="esc-menu" style="display: none;">
+        <div class="menu-content">
+            <h2>TUBLOX MENU</h2>
+            
+            <div class="menu-columns">
+                <!-- Список игроков -->
+                <div class="player-list-box">
+                    <h3>Players</h3>
+                    <ul id="player-list-ul">
+                        <!-- Сюда JS добавит игроков -->
+                    </ul>
+                </div>
+                
+                <!-- Кнопки действий -->
+                <div class="menu-actions">
+                    <button id="btn-resume" class="menu-btn">Resume</button>
+                    <button id="btn-reset" class="menu-btn red">Reset Character</button>
+                    <button id="btn-leave" class="menu-btn red">Leave Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мобильное управление -->
+    <div id="mobile-controls">
+        <div class="d-pad">
+            <button id="btn-up">⬆</button>
+            <div style="display:flex; gap:10px;">
+                <button id="btn-left">⬅</button>
+                <button id="btn-down">⬇</button>
+                <button id="btn-right">➡</button>
+            </div>
+        </div>
+        <!-- Кнопка удара для мобилок -->
+        <button id="btn-action" class="control-btn" style="background: #ff4444; margin-bottom: 10px;">Attack</button>
+        <button id="btn-jump" class="control-btn" style="background: #ff8800;">⬆</button>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

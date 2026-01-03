@@ -3,7 +3,7 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const path = require('path');
-const fs = require('fs');
+const mysql = require('mysql2'); // Подключаем MySQL
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 
@@ -12,43 +12,85 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// --- БАЗА ДАННЫХ ---
-const USERS_FILE = 'users.json';
-let users = {};
-
-if (fs.existsSync(USERS_FILE)) {
-    try { users = JSON.parse(fs.readFileSync(USERS_FILE)); } catch(e) {}
-}
-
-function saveUsers() {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-// --- АВТОРИЗАЦИЯ ---
-app.get('/api/me', (req, res) => {
-    const username = req.cookies['username'];
-    if (username && users[username]) res.json({ user: username });
-    else res.status(401).json({ error: 'Not logged in' });
+// --- НАСТРОЙКИ MYSQL (XAMPP) ---
+const db = mysql.createPool({
+    host: 'localhost',
+    user: 'root',      // Стандартный пользователь XAMPP
+    password: '',      // Стандартный пароль пустой
+    database: 'tublox_db', // Имя базы, которую мы создали
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
+// Проверка подключения
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error('Ошибка подключения к БД:', err.code);
+    } else {
+        console.log('Успешное подключение к MySQL!');
+        connection.release();
+    }
+});
+
+// --- АВТОРИЗАЦИЯ ЧЕРЕЗ MYSQL ---
+
+// Проверка: кто я?
+app.get('/api/me', (req, res) => {
+    const username = req.cookies['username'];
+    if (!username) return res.status(401).json({ error: 'Not logged in' });
+
+    // Проверяем, есть ли такой юзер в базе
+    db.query('SELECT username FROM users WHERE username = ?', [username], (err, results) => {
+        if (err || results.length === 0) {
+            return res.status(401).json({ error: 'User not found' });
+        }
+        res.json({ user: results[0].username });
+    });
+});
+
+// Регистрация
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.send('Missing fields');
-    if (users[username]) return res.send('User already exists');
-    users[username] = { password, skinColor: '#ff9900' };
-    saveUsers();
-    res.cookie('username', username);
-    res.redirect('/');
+
+    // Проверяем, есть ли уже такой пользователь
+    db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
+        if (results.length > 0) {
+            return res.send('User already exists');
+        }
+
+        // Создаем нового
+        const sql = 'INSERT INTO users (username, password, skinColor) VALUES (?, ?, ?)';
+        db.query(sql, [username, password, '#ff9900'], (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.send('Database error');
+            }
+            res.cookie('username', username);
+            res.redirect('/');
+        });
+    });
 });
 
+// Вход
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    if (!users[username] || users[username].password !== password) return res.send('Invalid credentials');
-    res.cookie('username', username);
-    res.redirect('/');
+
+    db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, results) => {
+        if (err) return res.send('Database error');
+        
+        if (results.length > 0) {
+            // Пароль совпал
+            res.cookie('username', username);
+            res.redirect('/');
+        } else {
+            res.send('Invalid credentials');
+        }
+    });
 });
 
-// --- ЛОГИКА ИГРЫ ---
+// --- ЛОГИКА ИГРЫ (ОСТАЛАСЬ БЕЗ ИЗМЕНЕНИЙ) ---
 
 let games = [
     {

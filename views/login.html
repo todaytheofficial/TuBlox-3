@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuBlox 3 Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-box">
+        <img src="assets/logo.png" alt="Logo" class="login-logo">
+        <h2>Welcome to TuBlox 3</h2>
+        
+        <!-- Tabs for Login/Register -->
+        <div class="tabs">
+            <button onclick="showForm('login')" class="active-tab">Login</button>
+            <button onclick="showForm('register')">Register</button>
+        </div>
+
+        <form id="login-form" action="/login" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" class="action-btn">Login</button>
+        </form>
+
+        <form id="register-form" action="/register" method="POST" style="display:none;">
+            <input type="text" name="username" placeholder="New Username" required>
+            <input type="password" name="password" placeholder="New Password" required>
+            <button type="submit" class="action-btn">Create Account</button>
+        </form>
+    </div>
+
+    <script>
+        function showForm(type) {
+            document.getElementById('login-form').style.display = type === 'login' ? 'flex' : 'none';
+            document.getElementById('register-form').style.display = type === 'register' ? 'flex' : 'none';
+        }
+    </script>
+</body>
+</html>

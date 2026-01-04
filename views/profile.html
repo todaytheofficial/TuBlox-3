@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile - TuBlox</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Подключаем Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Стили для контейнера аватара */
+        #avatar-container {
+            width: 200px; 
+            height: 250px; 
+            margin: 0 auto 15px auto;
+            border-bottom: 2px solid var(--accent-color);
+            background: radial-gradient(circle, #3a3d42 0%, #25282e 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        #avatar-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <img src="/assets/logo.png" style="width:40px; margin-right:10px;">
+            <h1>TuBlox 3</h1>
+            <nav class="main-nav">
+                <a href="/" class="nav-link">Games</a>
+                <a href="#" class="nav-link active">Profile</a>
+            </nav>
+        </div>
+        <div class="user-area" id="username-display">Loading...</div>
+    </header>
+
+    <div class="profile-container">
+        <!-- Левая колонка -->
+        <div class="profile-card">
+            <div id="avatar-container"></div> <!-- 3D Аватар -->
+
+            <h2 id="p-username">User</h2>
+            <p id="p-status" style="font-style: italic; color: #888;">"Ready to play!"</p>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="profile-content">
+            <h3>About</h3>
+            <div class="content-box">
+                <p>Member since: <span id="p-date">...</span></p>
+                <p>This player loves playing TuBlox games.</p>
+            </div>
+            
+            <h3>Currently Wearing</h3>
+            <div class="inventory-grid">
+                <div class="item-card" style="border: 1px solid #444;">
+                    <span style="color: #555;"></span> Black Top Hat
+                </div>
+                <div class="item-card" style="border: 1px solid #444;">
+                    <span style="color: #cc4444;"></span> Red Sweater
+                </div>
+                <div class="item-card" style="border: 1px solid #444;">
+                    <span style="color: #3366cc;"></span> Blue Jeans
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Данные профиля ---
+        const pathParts = window.location.pathname.split('/');
+        const userId = pathParts[pathParts.length - 1];
+
+        fetch('/api/me').then(r=>r.json()).then(d=>{
+            document.getElementById('username-display').textContent = d.user;
+        });
+
+        fetch(`/api/user/${userId}`).then(res => {
+            if(res.status !== 200) { document.body.innerHTML = '<h1 style="color:white;text-align:center;margin-top:50px;">User not found</h1>'; return; }
+            return res.json();
+        }).then(user => {
+            document.getElementById('p-username').textContent = user.username;
+            const date = new Date(user.created_at).toLocaleDateString();
+            document.getElementById('p-date').textContent = date;
+            
+            init3DAvatar(); // Запускаем 3D после загрузки данных
+        });
+
+
+        // --- 2. Логика 3D Аватара ---
+        function init3DAvatar() {
+            const container = document.getElementById('avatar-container');
+            const scene = new THREE.Scene();
+            
+            // Камера
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 1.4, 3.5);
+
+            // Рендер
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // Свет
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(2, 5, 5);
+            scene.add(dirLight);
+
+            // --- Генерация текстуры лица (Как в игре) ---
+            function createFaceTexture() {
+                const canvas = document.createElement('canvas'); 
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                
+                // Кожа
+                ctx.fillStyle = '#ffcc99'; 
+                ctx.fillRect(0, 0, 128, 128);
+                
+                // Глаза
+                ctx.fillStyle = 'black'; 
+                ctx.fillRect(35, 45, 15, 15); 
+                ctx.fillRect(78, 45, 15, 15);
+                
+                // Улыбка
+                ctx.lineWidth = 6; 
+                ctx.beginPath(); 
+                ctx.arc(64, 70, 25, 0.2 * Math.PI, 0.8 * Math.PI); 
+                ctx.stroke();
+                
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.magFilter = THREE.NearestFilter; // Пиксельный стиль
+                return tex;
+            }
+
+            // --- Сборка персонажа ---
+            function createAvatarMesh() {
+                const group = new THREE.Group();
+                
+                const skinMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
+                const sweaterMat = new THREE.MeshLambertMaterial({ color: 0xcc4444 });
+                const pantsMat = new THREE.MeshLambertMaterial({ color: 0x3366cc });
+                const blackMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+                const faceMat = new THREE.MeshBasicMaterial({ map: createFaceTexture() });
+
+                // ГОЛОВА
+                // Массив материалов: [Right, Left, Top, Bottom, Front, Back]
+                // Обычно Front - это индекс 4 (или +Z)
+                const headMaterials = [skinMat, skinMat, skinMat, skinMat, faceMat, skinMat];
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), headMaterials);
+                head.position.y = 1.25;
+                group.add(head);
+
+                // ШЛЯПА (Цилиндр)
+                const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 12), blackMat);
+                brim.position.y = 1.52;
+                group.add(brim);
+                const topHat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.4, 12), blackMat);
+                topHat.position.y = 1.75;
+                group.add(topHat);
+
+                // ТЕЛО (Свитер)
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), sweaterMat);
+                body.position.y = 0.6;
+                group.add(body);
+
+                // РУКИ
+                const armGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
+                const lArm = new THREE.Mesh(armGeo, sweaterMat);
+                lArm.position.set(-0.55, 0.6, 0);
+                group.add(lArm);
+                const rArm = new THREE.Mesh(armGeo, sweaterMat);
+                rArm.position.set(0.55, 0.6, 0);
+                group.add(rArm);
+
+                // НОГИ (Джинсы)
+                const legGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
+                const lLeg = new THREE.Mesh(legGeo, pantsMat);
+                lLeg.position.set(-0.2, -0.2, 0);
+                group.add(lLeg);
+                const rLeg = new THREE.Mesh(legGeo, pantsMat);
+                rLeg.position.set(0.2, -0.2, 0);
+                group.add(rLeg);
+
+                return group;
+            }
+
+            const avatar = createAvatarMesh();
+            avatar.position.y = -0.5; // Центрируем
+            scene.add(avatar);
+
+            // Анимация вращения
+            function animate() {
+                requestAnimationFrame(animate);
+                avatar.rotation.y += 0.01; // Вращаем, чтобы увидеть лицо
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>

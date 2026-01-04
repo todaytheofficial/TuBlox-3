@@ -6,19 +6,49 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        .currency-badge { display: flex; align-items: center; background: rgba(0, 0, 0, 0.5); padding: 5px 12px; border-radius: 20px; border: 1px solid #333; margin-right: 15px; }
+        /* --- Currency Styles --- */
+        .currency-badge {
+            display: flex; align-items: center; background: rgba(0, 0, 0, 0.5);
+            padding: 5px 12px; border-radius: 20px; border: 1px solid #333; margin-right: 15px;
+        }
         .currency-icon { width: 20px; height: 20px; margin-right: 8px; }
         .currency-amount { color: #fff; font-weight: bold; font-family: 'Verdana', sans-serif; }
         .header-right { display: flex; align-items: center; }
-        #avatar-container { width: 200px; height: 250px; margin: 0 auto 15px auto; border-bottom: 2px solid var(--accent-color); background: radial-gradient(circle, #3a3d42 0%, #25282e 100%); border-radius: 8px; overflow: hidden; position: relative; }
-        #avatar-container canvas { display: block; width: 100% !important; height: 100% !important; outline: none; }
+
+        /* --- Avatar --- */
+        #avatar-container {
+            width: 200px; height: 250px; margin: 0 auto 15px auto;
+            border-bottom: 2px solid var(--accent-color);
+            background: radial-gradient(circle, #3a3d42 0%, #25282e 100%);
+            border-radius: 8px; overflow: hidden; position: relative;
+        }
+        #avatar-container canvas { width: 100% !important; height: 100% !important; outline: none; }
+        
+        /* --- 3D Inventory Styles --- */
         .inventory-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-        .inv-item { background: #333; border: 1px solid #555; border-radius: 6px; width: 80px; padding: 10px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .inv-item:hover { border-color: var(--accent-color); transform: translateY(-2px); }
-        .inv-icon { font-size: 24px; display: block; margin-bottom: 5px; }
-        .inv-name { font-size: 10px; color: #ccc; }
-        #settings-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: var(--card-color); padding: 25px; border-radius: 10px; width: 300px; border: 1px solid #444; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .inv-item {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 6px;
+            width: 100px; /* Ширина карточки в инвентаре */
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .inv-item:hover { border-color: var(--accent-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        
+        .inv-preview { width: 100px; height: 80px; background: #2a2a2a; }
+        .inv-name { font-size: 10px; color: #ccc; padding: 5px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* --- Modal --- */
+        #settings-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--card-color); padding: 25px; border-radius: 10px; width: 300px;
+            border: 1px solid #444; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
         .modal-content input { width: 90%; margin-bottom: 10px; }
     </style>
 </head>
@@ -38,13 +68,13 @@
                 <img src="/assets/tubux.png" alt="T$" class="currency-icon">
                 <span id="header-tubux" class="currency-amount">...</span>
             </div>
-            <button class="action-btn" onclick="openSettings()" style="padding: 8px 15px; display:flex; align-items:center; gap:5px;">⚙️ Settings</button>
+            <button class="action-btn" onclick="openSettings()" style="padding: 8px 15px;">⚙️ Settings</button>
         </div>
     </header>
 
     <div class="profile-container">
         <div class="profile-card">
-            <div id="avatar-container"></div>
+            <div id="avatar-container"></div> 
             <h2 id="p-username">User</h2>
             <div style="display:flex; justify-content:center; margin-top:10px;">
                 <div class="currency-badge" style="background:transparent; border:none;">
@@ -57,20 +87,22 @@
 
         <div class="profile-content">
             <h3>Inventory</h3>
-            <p style="color:#888; font-size:0.9em;">Click on an item to wear it.</p>
-            <div id="inventory-grid" class="inventory-grid"><p>Loading items...</p></div>
+            <p style="color:#888; font-size:0.9em;">Click to equip.</p>
+            <div id="inventory-grid" class="inventory-grid">
+                <p>Loading...</p>
+            </div>
             <h3 style="margin-top: 30px;">About</h3>
             <div class="content-box">
                 <p>Member since: <span id="p-date">...</span></p>
-                <p>This player loves playing TuBlox games.</p>
             </div>
         </div>
     </div>
 
+    <!-- Modal -->
     <div id="settings-modal">
         <div class="modal-content">
-            <h2 style="color:var(--accent-color); margin-top:0;">Settings</h2>
-            <h4 style="color:#ccc; margin-bottom:10px;">Change Password</h4>
+            <h2 style="color:var(--accent-color);">Settings</h2>
+            <h4 style="color:#ccc;">Change Password</h4>
             <input type="password" id="oldPass" placeholder="Old Password">
             <input type="password" id="newPass" placeholder="New Password">
             <button class="action-btn" onclick="changePass()" style="width:100%; margin-bottom:20px;">Save Password</button>
@@ -81,82 +113,164 @@
     </div>
 
     <script>
-        const pathParts = window.location.pathname.split('/'); const userId = pathParts[pathParts.length - 1]; let allItems = {};
-        fetch('/api/items').then(r=>r.json()).then(items => { allItems = items; loadProfile(); });
+        const pathParts = window.location.pathname.split('/');
+        const userId = pathParts[pathParts.length - 1];
+        let allItems = {};
+
+        fetch('/api/items').then(r=>r.json()).then(items => {
+            allItems = items;
+            loadProfile();
+        });
         fetch('/api/me').then(r=>r.json()).then(d=>{ document.getElementById('header-tubux').textContent = d.tubux; });
 
         function loadProfile() {
-            fetch(`/api/user/${userId}`).then(res => { if(res.status !== 200) { document.body.innerHTML = '<h1>User not found</h1>'; return; } return res.json(); }).then(user => {
+            fetch(`/api/user/${userId}`).then(res => {
+                if(res.status !== 200) { document.body.innerHTML = '<h1>User not found</h1>'; return; }
+                return res.json();
+            }).then(user => {
                 document.getElementById('p-username').textContent = user.username;
                 document.getElementById('p-tubux').textContent = user.tubux;
                 document.getElementById('p-date').textContent = new Date(user.created_at).toLocaleDateString();
+                
                 initAvatar(user.shirtColor, user.pantsColor, user.hatType);
-                const invDiv = document.getElementById('inventory-grid'); invDiv.innerHTML = '';
-                renderInvItem({name:'Default Shirt', type:'shirt', color:'#cc4444', id:'def_shirt'}, true);
-                renderInvItem({name:'Default Pants', type:'pants', color:'#3366cc', id:'def_pants'}, true);
-                renderInvItem({name:'Remove Hat', type:'hat', model:'hat_none', id:'def_hat'}, true);
-                if(user.inventory) { user.inventory.split(',').forEach(itemId => { if(allItems[itemId]) renderInvItem(allItems[itemId], false); }); }
+
+                const invDiv = document.getElementById('inventory-grid');
+                invDiv.innerHTML = '';
+
+                // Дефолтные вещи
+                renderInvItem({name:'Red Shirt', type:'shirt', color:'#cc4444', id:'def_shirt'}, 'def_shirt');
+                renderInvItem({name:'Blue Pants', type:'pants', color:'#3366cc', id:'def_pants'}, 'def_pants');
+                renderInvItem({name:'No Hat', type:'hat', model:'none', id:'def_hat'}, 'def_hat');
+
+                if(user.inventory) {
+                    user.inventory.split(',').forEach(itemId => {
+                        if(allItems[itemId]) renderInvItem(allItems[itemId], itemId);
+                    });
+                }
             });
         }
 
-        function renderInvItem(item, isDefault) {
-            const div = document.createElement('div'); div.className = 'inv-item';
-            let icon = '📦'; if(item.type === 'shirt') icon = '👕'; if(item.type === 'pants') icon = '👖'; if(item.type === 'hat') icon = '🎩';
-            div.innerHTML = `<span class="inv-icon">${icon}</span><span class="inv-name">${item.name}</span>`;
-            div.onclick = () => equip(item); document.getElementById('inventory-grid').appendChild(div);
+        function renderInvItem(item, uniqueId) {
+            const div = document.createElement('div');
+            div.className = 'inv-item';
+            const canvasId = `inv-preview-${uniqueId}`;
+            
+            div.innerHTML = `
+                <div id="${canvasId}" class="inv-preview"></div>
+                <div class="inv-name">${item.name}</div>
+            `;
+            
+            div.onclick = () => equip(item);
+            document.getElementById('inventory-grid').appendChild(div);
+
+            // Рендерим миниатюру
+            setTimeout(() => render3DPreview(canvasId, item), 0);
         }
 
         function equip(item) {
-            fetch('/api/equip', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ itemId: item.id, type: item.type }) }).then(() => location.reload());
+            fetch('/api/equip', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ itemId: item.id, type: item.type })
+            }).then(() => location.reload());
+        }
+
+        // --- Shared 3D Preview (Копия функции из Marketplace) ---
+        function render3DPreview(elementId, item) {
+            const container = document.getElementById(elementId);
+            if(!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth/container.clientHeight, 0.1, 100);
+            camera.position.z = 2.5; camera.position.y = 0.5;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 1, 2); scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            const group = new THREE.Group();
+            
+            if (item.type === 'shirt') {
+                const mat = new THREE.MeshLambertMaterial({ color: item.color });
+                group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.5), mat)); // Торс
+                const lArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.2, 0.3), mat); lArm.position.set(-0.75, 0, 0); group.add(lArm);
+                const rArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.2, 0.3), mat); rArm.position.set(0.75, 0, 0); group.add(rArm);
+            } 
+            else if (item.type === 'pants') {
+                const mat = new THREE.MeshLambertMaterial({ color: item.color });
+                const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), mat); lLeg.position.set(-0.25, 0, 0); group.add(lLeg);
+                const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.4), mat); rLeg.position.set(0.25, 0, 0); group.add(rLeg);
+            } 
+            else if (item.type === 'hat' && item.model === 'tophat') {
+                const mat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+                const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.1, 12), mat);
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.8, 12), mat); top.position.y = 0.45;
+                group.add(brim); group.add(top); group.position.y = -0.2;
+            }
+
+            scene.add(group);
+            function animate() { requestAnimationFrame(animate); group.rotation.y += 0.02; renderer.render(scene, camera); }
+            animate();
+        }
+
+        // --- Main Avatar (Big) ---
+        function initAvatar(shirtC, pantsC, hatT) {
+            const container = document.getElementById('avatar-container');
+            container.innerHTML = '';
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth/container.clientHeight, 0.1, 100);
+            camera.position.set(0, 1.4, 3.5);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(2, 5, 5); scene.add(dl);
+
+            function createFaceTexture() {
+                const c = document.createElement('canvas'); c.width=128; c.height=128;
+                const x = c.getContext('2d');
+                x.fillStyle='#ffcc99'; x.fillRect(0,0,128,128);
+                x.fillStyle='black'; x.fillRect(35,45,15,15); x.fillRect(78,45,15,15);
+                x.lineWidth=6; x.beginPath(); x.arc(64,70,25,0.2*Math.PI,0.8*Math.PI); x.stroke();
+                const t = new THREE.CanvasTexture(c); t.magFilter = THREE.NearestFilter; return t;
+            }
+
+            const skin = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
+            const shirt = new THREE.MeshLambertMaterial({ color: shirtC || '#cc4444' });
+            const pants = new THREE.MeshLambertMaterial({ color: pantsC || '#3366cc' });
+            const black = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            const face = new THREE.MeshBasicMaterial({ map: createFaceTexture() });
+            const group = new THREE.Group();
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5), [skin, skin, skin, skin, face, skin]);
+            head.position.y = 1.25; group.add(head);
+
+            if(hatT === 'hat_top' || hatT === 'tophat') {
+                const b = new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,0.05,12), black); b.position.y=1.52; group.add(b);
+                const t = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.4,12), black); t.position.y=1.75; group.add(t);
+            }
+
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.8,0.4), shirt); b.position.y=0.6; group.add(b);
+            const la = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.8,0.25), shirt); la.position.set(-0.55,0.6,0); group.add(la);
+            const ra = new THREE.Mesh(new THREE.BoxGeometry(0.25,0.8,0.25), shirt); ra.position.set(0.55,0.6,0); group.add(ra);
+            const ll = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.8,0.3), pants); ll.position.set(-0.2,-0.2,0); group.add(ll);
+            const rl = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.8,0.3), pants); rl.position.set(0.2,-0.2,0); group.add(rl);
+
+            group.position.y = -0.5; scene.add(group);
+            function anim() { requestAnimationFrame(anim); group.rotation.y += 0.01; renderer.render(scene, camera); }
+            anim();
         }
 
         function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
         function changePass() {
             const oldPass = document.getElementById('oldPass').value; const newPass = document.getElementById('newPass').value;
-            fetch('/change-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({oldPass, newPass}) }).then(r=>r.text()).then(alert);
-        }
-
-        function initAvatar(shirtC, pantsC, hatT) {
-            const container = document.getElementById('avatar-container'); container.innerHTML = '';
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100); camera.position.set(0, 1.4, 3.5);
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7)); const dirLight = new THREE.DirectionalLight(0xffffff, 0.8); dirLight.position.set(2, 5, 5); scene.add(dirLight);
-
-            function createFaceTexture() {
-                const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128; const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffcc99'; ctx.fillRect(0, 0, 128, 128); ctx.fillStyle = 'black'; ctx.fillRect(35, 45, 15, 15); ctx.fillRect(78, 45, 15, 15);
-                ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(64, 70, 25, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
-                const tex = new THREE.CanvasTexture(canvas); tex.magFilter = THREE.NearestFilter; return tex;
-            }
-
-            const skinMat = new THREE.MeshLambertMaterial({ color: 0xffcc99 });
-            const sweaterMat = new THREE.MeshLambertMaterial({ color: shirtC || '#cc4444' });
-            const pantsMat = new THREE.MeshLambertMaterial({ color: pantsC || '#3366cc' });
-            const blackMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-            const faceMat = new THREE.MeshBasicMaterial({ map: createFaceTexture() });
-
-            const group = new THREE.Group();
-            const headMaterials = [skinMat, skinMat, skinMat, skinMat, faceMat, skinMat];
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), headMaterials); head.position.y = 1.25; group.add(head);
-
-            // FIX: Шляпа только если она выбрана
-            if(hatT === 'hat_top' || hatT === 'tophat') {
-                const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 12), blackMat); brim.position.y = 1.52; group.add(brim);
-                const topHat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.4, 12), blackMat); topHat.position.y = 1.75; group.add(topHat);
-            }
-
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.4), sweaterMat); body.position.y = 0.6; group.add(body);
-            const armGeo = new THREE.BoxGeometry(0.25, 0.8, 0.25);
-            const lArm = new THREE.Mesh(armGeo, sweaterMat); lArm.position.set(-0.55, 0.6, 0); group.add(lArm);
-            const rArm = new THREE.Mesh(armGeo, sweaterMat); rArm.position.set(0.55, 0.6, 0); group.add(rArm);
-            const legGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
-            const lLeg = new THREE.Mesh(legGeo, pantsMat); lLeg.position.set(-0.2, -0.2, 0); group.add(lLeg);
-            const rLeg = new THREE.Mesh(legGeo, pantsMat); rLeg.position.set(0.2, -0.2, 0); group.add(rLeg);
-
-            group.position.y = -0.5; scene.add(group);
-            function animate() { requestAnimationFrame(animate); group.rotation.y += 0.01; renderer.render(scene, camera); } animate();
+            fetch('/change-password', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({oldPass, newPass}) })
+            .then(r=>r.text()).then(alert);
         }
     </script>
 </body>

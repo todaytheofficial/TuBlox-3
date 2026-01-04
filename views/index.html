@@ -66,7 +66,7 @@
             if (res.status !== 200) window.location.href = '/login.html';
             return res.json();
         }).then(data => {
-            document.getElementById('username-display').textContent = `Hi, ${data.user}`;
+            document.getElementById('username-display').textContent = `Hi, ${data.username}`;
             // Обновляем баланс
             document.getElementById('tubux-display').textContent = data.tubux;
             

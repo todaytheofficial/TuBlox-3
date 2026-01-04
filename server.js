@@ -8,9 +8,8 @@ const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 
-// 1. Раздаем статику (CSS, JS, Картинки) из папки public
+// 1. Раздаем статику
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -27,77 +26,100 @@ const db = mysql.createPool({
     queueLimit: 0
 });
 
+// Проверка подключения и СОЗДАНИЕ ТАБЛИЦЫ
 db.getConnection((err, connection) => {
     if (err) {
-        console.error('❌ Ошибка БД:', err.code);
+        console.error('❌ Ошибка подключения к БД:', err.message);
     } else {
         console.log('✅ MySQL подключен!');
+        
+        // Автоматически создаем таблицу users, если её нет
+        const createTableQuery = `
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                skinColor VARCHAR(50) DEFAULT '#ff9900',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `;
+        
+        connection.query(createTableQuery, (err) => {
+            if (err) console.error('❌ Ошибка создания таблицы:', err);
+            else console.log('✅ Таблица users проверена/создана');
+        });
+
         connection.release();
     }
 });
 
-// --- МАРШРУТИЗАЦИЯ (VIEWS) ---
-// Так как HTML теперь не в public, мы должны отправлять их вручную
-
-// Главная страница (Вход)
+// --- МАРШРУТИЗАЦИЯ ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
-// Страница игры
 app.get('/game.html', (req, res) => {
-    // Проверка: если не залогинен, кидаем на главную (защита)
     const username = req.cookies['username'];
-    if (!username) {
-        return res.redirect('/');
-    }
+    if (!username) return res.redirect('/');
     res.sendFile(path.join(__dirname, 'views', 'game.html'));
 });
 
-// Если у тебя есть register.html, добавь это:
 app.get('/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
-
-// Маршрут Профиля (http://localhost:3000/profile/1)
 app.get('/profile/:id', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'profile.html'));
 });
 
 // --- API ---
 
-// Получить текущего пользователя (с ID)
 app.get('/api/me', (req, res) => {
     const username = req.cookies['username'];
     if (!username) return res.status(401).json({ error: 'Not logged in' });
     
     db.query('SELECT id, username FROM users WHERE username = ?', [username], (err, results) => {
-        if (err || results.length === 0) return res.status(401).json({ error: 'User not found' });
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'DB Error' });
+        }
+        if (!results || results.length === 0) return res.status(401).json({ error: 'User not found' });
         res.json({ id: results[0].id, user: results[0].username });
     });
 });
 
-
-// Получить данные профиля по ID (публичные)
 app.get('/api/user/:id', (req, res) => {
     const userId = req.params.id;
     db.query('SELECT id, username, created_at FROM users WHERE id = ?', [userId], (err, results) => {
-        if (err || results.length === 0) return res.status(404).json({ error: 'User not found' });
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: 'DB Error' });
+        }
+        if (!results || results.length === 0) return res.status(404).json({ error: 'User not found' });
         res.json(results[0]);
     });
 });
-
 
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.send('Missing fields');
 
+    // Проверяем существование
     db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
+        if (err) {
+            console.error('Ошибка при поиске:', err);
+            return res.send('Database check error');
+        }
+        
         if (results.length > 0) return res.send('User already exists');
+
+        // Создаем
         db.query('INSERT INTO users (username, password, skinColor) VALUES (?, ?, ?)', 
             [username, password, '#ff9900'], (err) => {
-            if (err) return res.send('Database error');
+            if (err) {
+                console.error('Ошибка при регистрации:', err);
+                return res.send('Database insert error');
+            }
             res.cookie('username', username);
             res.redirect('/');
         });
@@ -107,6 +129,11 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.query('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, results) => {
+        if (err) {
+            console.error('Ошибка при входе:', err);
+            return res.send('Database error');
+        }
+        
         if (results.length > 0) {
             res.cookie('username', username);
             res.redirect('/');
@@ -116,9 +143,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-
-
-// --- ИГРОВАЯ ЛОГИКА (SOCKET.IO) ---
+// --- SOCKET.IO ---
 let games = [
     { id: 'parkour_1', name: 'Factory Parkour', author: 'Admin', desc: 'Hardcore Parkour.', visits: 0, online: 0, image: 'logo.png' },
     { id: 'pvp_arena', name: 'Sword PVP Arena', author: 'Admin', desc: 'Fight!', visits: 0, online: 0, image: 'logo.png' }
